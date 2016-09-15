@@ -1,0 +1,15 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+  font-size: 18px;
+}
+
+h1,h3{
+  text-align: center;
+}
+
+.panel{
+  height: 200px;
+}
