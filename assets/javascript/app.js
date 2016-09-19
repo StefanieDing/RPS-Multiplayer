@@ -13,15 +13,49 @@ var database = firebase.database();
 var playerOneWins = 0;
 var playerOneLoss = 0;
 var playerOneName = '';
-var playerOneChoice;
+var playerOneChoice = '';
 var playerTwoWins = 0;
 var playerTwoLoss = 0;
 var playerTwoName = '';
+var playerTwoChoice = '';
 var checkForWinner = false;
-var turn;
+var turn = 1;
 
+//connection
+var connectionsRef = database.ref("/connections");
+var connectedRef = database.ref(".info/connected");
 
+connectedRef.on("value", function(snap) {
+  //if they are connected
+  if(snap.val()){
+      //add user to connections list.
+      var here = connectionsRef.push(true);
+      //remove user from connection list when they disconnect.
+      here.onDisconnect().remove();
+  };
+});
+
+connectionsRef.on("value", function(snap) {
+   playersConnected = (snap.numChildren());
+   //only displays after two players have been connected.
+   if(playersConnected === 2){
+     database.ref().limitToFirst(2).on("child_added", function(snapshot) {
+      database.ref().limitToFirst(1).on("value", function(snapshot) {
+        $('#playerOneOptions').html('player one');
+      });
+
+      database.ref().limitToLast(1).on("value", function(snapshot) {
+        $('#playerTwoOptions').html('player two');
+      });
+     });
+    }
+});
+
+//updates firebase
 database.ref('/bidderData').on("value", function(snapshot) {
+  // if(player one and two exists{
+  //   //print the names in their corresponding panel
+  // }
 
 // If any errors are experienced, log them to console. 
 }, function (errorObject) {
@@ -30,19 +64,35 @@ database.ref('/bidderData').on("value", function(snapshot) {
 
 });
 
+
+
+
 //Grabbing name from user
 $("#startGame").on("click", function() {
   var name = $('#userName').val().trim();
-  //if playerOneName is empty, set input userName to it
-  //display playerOneName
-
-  //if playerOne isn't empty set playerTwoName to input userName
-  //display playerTwoName
+  
+  if(playerOneName == ''){
+    playerOneName = name;
+  }
+  else if(playerTwoName == ''){
+    playerTwoName = name;
+  }
 
   //store variables in firebase
   database.ref().set({
-      one: playerOneName,
-      two: playerTwoName
+      player:{
+        one:{
+          name: playerOneName,
+          wins: playerOneWins,
+          loss: playerOneLoss,
+        },
+        two:{
+          name: playerTwoName,
+          wins: playerTwoWins,
+          loss: playerTwoLoss,
+        }
+      },
+      turn: turn
     });
 });
 
@@ -62,57 +112,61 @@ $("#startGame").on("click", function() {
 //displays players choice to their corresponding panel
 //after playerTwo chooses, set checkForWinner to true
 
-//if checkForWinner is true, send to whoWon function
-
-//function whoWon
+function whoWon(){
   //displays both players' choices
-  //$('#playerOnePick').text(playerOneName + ': ' + playerOneChoice);
-  //$('#playerOnePick').text(playerTwoName + ': ' + playerTwoChoice);
+  $('#playerOnePick').text(playerOneName + ': ' + playerOneChoice);
+  $('#playerOnePick').text(playerTwoName + ': ' + playerTwoChoice);
 
-  // if (playerOneChoice == playerTwoChoice){
-  //   $('#winner').html('It's a tie');
-  // }
-  // else if ((playerOneChoice == 'Rock') && == (playerTwoChoice == 'Paper'){
-  //   $('#winner').html(playerTwoName + ' wins!');
-  //   playerOneLoss++;
-  //   playerTwoWins++;
-  // }
-  // else if ((playerOneChoice == 'Rock') && == (playerTwoChoice == 'Scissors'){
-  //   $('#winner').html(playerOneName + ' wins!');
-  //   playerOneWins++;
-  //   playerTwoLoss++;
-  // }
-  // else if ((playerOneChoice == 'Scissors') && == (playerTwoChoice == 'Paper'){
-  //   $('#winner').html(playerOneName + ' wins!');
-  //   playerOneWins++;
-  //   playerTwoLoss++;
-  // }
-  // else if ((playerOneChoice == 'Scissors') && == (playerTwoChoice == 'Rock'){
-  //   $('#winner').html(playerTwoName + ' wins!');
-  //   playerOneLoss++;
-  //   playerTwoWins++;
-  // }
-  // else if ((playerOneChoice == 'Paper') && == (playerTwoChoice == 'Scissors'){
-  //   $('#winner').html(playerTwoName + ' wins!');
-  //   playerOneLoss++;
-  //   playerTwoWins++;
-  // }
-  // else if ((playerOneChoice == 'Paper') && == (playerTwoChoice == 'Rock'){
-  //   $('#winner').html(playerOneName + ' wins!');
-  //   playerOneWins++;
-  //   playerTwoLoss++;
-  // }
+  if (playerOneChoice == playerTwoChoice){
+    $('#winner').html("It's a tie!");
+  }
+  else if ((playerOneChoice == 'Rock') && (playerTwoChoice == 'Paper')){
+    $('#winner').html(playerTwoName + ' wins!');
+    playerOneLoss++;
+    playerTwoWins++;
+  }
+  else if ((playerOneChoice == 'Rock') && (playerTwoChoice == 'Scissors')){
+    $('#winner').html(playerOneName + ' wins!');
+    playerOneWins++;
+    playerTwoLoss++;
+  }
+  else if ((playerOneChoice == 'Scissors') && (playerTwoChoice == 'Paper')){
+    $('#winner').html(playerOneName + ' wins!');
+    playerOneWins++;
+    playerTwoLoss++;
+  }
+  else if ((playerOneChoice == 'Scissors') && (playerTwoChoice == 'Rock')){
+    $('#winner').html(playerTwoName + ' wins!');
+    playerOneLoss++;
+    playerTwoWins++;
+  }
+  else if ((playerOneChoice == 'Paper') && (playerTwoChoice == 'Scissors')){
+    $('#winner').html(playerTwoName + ' wins!');
+    playerOneLoss++;
+    playerTwoWins++;
+  }
+  else if ((playerOneChoice == 'Paper') && (playerTwoChoice == 'Rock')){
+    $('#winner').html(playerOneName + ' wins!');
+    playerOneWins++;
+    playerTwoLoss++;
+  }
+}
 
 //Chatbox
 $("#sendChat").on("click", function() {
   var chatComment = $('#userChat').val().trim();
-
+  var chat = $('<div>');
   //if input came from playerOne
-    //prepend playerOneName to chatComment
+    //chatComment.prepend(playerOneName + ': ');
 
   //else if input came from playerTwo
-    //prepend playerTwoName to chatComment
-
-  $('.chatbox').append(chatComment);
+    //chatComment.prepend(playerTwoName + ': ');
+    chat.append(chatComment);
+  $('.chatbox').append(chat);
 
 });
+
+//sends to whoWon function after both players have won.
+if (checkForWinner == true){
+  whoWon();
+}

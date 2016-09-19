@@ -3,7 +3,9 @@
 }
 
 body {
+  font-family: 'Neucha', cursive, serif;
   font-size: 18px;
+  background: url(../images/lined_paper-texture.jpg);
 }
 
 h1,h3{
