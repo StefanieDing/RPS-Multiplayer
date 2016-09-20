@@ -1,10 +1,10 @@
 // Initialize Firebase
 var config = {
-  apiKey: "AIzaSyCFHYHDt6CFLh-PC7gLjYgTw5ldiBDshtA",
-  authDomain: "rps-multiplayer-3e7d4.firebaseapp.com",
-  databaseURL: "https://rps-multiplayer-3e7d4.firebaseio.com",
-  storageBucket: "rps-multiplayer-3e7d4.appspot.com",
-  messagingSenderId: "114208673769"
+  apiKey: "AIzaSyB1O82mtaSF2dbvgSC6_-zbGzX4mqLTbSY",
+  authDomain: "rps-multiplayer-22593.firebaseapp.com",
+  databaseURL: "https://rps-multiplayer-22593.firebaseio.com",
+  storageBucket: "",
+  messagingSenderId: "238177865880"
 };
 firebase.initializeApp(config);
 
@@ -12,14 +12,17 @@ var database = firebase.database();
 
 var playerOneWins = 0;
 var playerOneLoss = 0;
-var playerOneName = '';
+var playerOneName='';
 var playerOneChoice = '';
 var playerTwoWins = 0;
 var playerTwoLoss = 0;
-var playerTwoName = '';
+var playerTwoName='';
 var playerTwoChoice = '';
 var checkForWinner = false;
-var turn = 1;
+var turn;
+var rps = ['Rock', 'Paper', 'Scissors'];
+var readyPlay = false;
+var playersConnected = 0;
 
 //connection
 var connectionsRef = database.ref("/connections");
@@ -37,40 +40,30 @@ connectedRef.on("value", function(snap) {
 
 connectionsRef.on("value", function(snap) {
    playersConnected = (snap.numChildren());
-   //only displays after two players have been connected.
-   if(playersConnected === 2){
-     database.ref().limitToFirst(2).on("child_added", function(snapshot) {
-      database.ref().limitToFirst(1).on("value", function(snapshot) {
-        $('#playerOneOptions').html('player one');
-      });
-
-      database.ref().limitToLast(1).on("value", function(snapshot) {
-        $('#playerTwoOptions').html('player two');
-      });
-     });
-    }
+   console.log(playersConnected);
 });
 
 //updates firebase
-database.ref('/bidderData').on("value", function(snapshot) {
-  // if(player one and two exists{
-  //   //print the names in their corresponding panel
-  // }
+database.ref().on("value", function(snapshot) {
+  if((snapshot.child('oneName').exists) && (snapshot.child('twoName').exists)){
+    $('.playerOneName').html((snapshot.val().player.one.oneName));
+    $('.playerTwoName').html((snapshot.val().player.two.twoName));
+  }
 
-// If any errors are experienced, log them to console. 
+  $('#playerOneProgess').html('Wins: '+ (snapshot.val().player.one.wins) + ' Loss: ' + (snapshot.val().player.one.loss) );
+  $('#playerTwoProgess').html('Wins: '+ (snapshot.val().player.two.wins) + ' Loss: ' + (snapshot.val().player.two.loss) );
+
+// If any errors are experienced, log them to console.
 }, function (errorObject) {
 
     console.log("The read failed: " + errorObject.code);
 
 });
 
-
-
-
 //Grabbing name from user
 $("#startGame").on("click", function() {
   var name = $('#userName').val().trim();
-  
+
   if(playerOneName == ''){
     playerOneName = name;
   }
@@ -82,40 +75,91 @@ $("#startGame").on("click", function() {
   database.ref().set({
       player:{
         one:{
-          name: playerOneName,
+          oneName: playerOneName,
           wins: playerOneWins,
           loss: playerOneLoss,
         },
         two:{
-          name: playerTwoName,
+          twoName: playerTwoName,
           wins: playerTwoWins,
           loss: playerTwoLoss,
         }
       },
       turn: turn
     });
+
+  if ((playerOneName != '') && (playerTwoName != '')){
+    turn =1;
+    readyPlay = true;
+  }
+
 });
 
-//if both players are set, set turn to 1
-  //message to player one - playerOneName + ', it's your turn!'
-  //message to player two - 'Waiting for ' + playerOneName;
-//after player one chooses, set turn to 2
-  //message to player one - 'Waiting for ' + playerTwoName;
-  //message to player two - playerTwoName + ', it's your turn!'
+if(playersConnected == 2){
+//displays only to player one
+database.ref().limitToFirst(1).on("child_added", function(snapshot) {
+     if(turn === 1){
+      $('#playerOneMsg').html(playerOneName + ", it's your turn!");
 
-//function rps
-//sets up clickable rock paper scissor buttons
-//if turn ==1 display in playerOneOptions
-//if turn ==2 display in playerTwoOptions
+      for(var i = 0; i < rps.length; i++){
+        var choices = $('<div>');
+        choices.attr('data-choice', rps[i]);
+        choices.addClass(rockPScissors);
+        choices.text(rps[i]);
+        $('#playerOneOptions').append(choices);
+      }
+     } else if(turn === 2){
+      $('#playerOneMsg').html('Waiting for '+ playerTwoName);
+     }
+});
 
-//on click, sets value to corresponding players choice.
-//displays players choice to their corresponding panel
-//after playerTwo chooses, set checkForWinner to true
+//displays only to player two
+database.ref().limitToLast(1).on("child_added", function(snapshot) {
+     if(turn === 2){
+      $('#playerTwoMsg').html(playerTwoName + ", it's your turn!");
 
+      for(var i = 0; i < rps.length; i++){
+        var choices = $('<div>');
+        choices.attr('data-choice', rps[i]);
+        choices.addClass(rockPS);
+        choices.text(rps[i]);
+        $('#playerTwoOptions').append(choices);
+      }
+     } else if(turn === 1){
+        $('#playerTwoOptions').html('Waiting for ' + playerOneName);
+     }
+});
+}
+
+//when player one chooses
+$('.rockPScissors').on('click', function(){
+  playerOneChoice = $(this).data('choice');
+  $('#playerOneOptions').empty();
+
+  database.ref().limitToFirst(1).on("child_added", function(snapshot){
+    $('#playerOneChoice').html(playerOneChoice);
+  });
+
+  turn = 2;
+});
+//when player two chooses
+$('.rockPS').on('click', function(){
+  playerTwoChoice = $(this).data('choice');
+  $('#playerTwoOptions').empty();
+
+  database.ref().limitToFirst(1).on("child_added", function(snapshot){
+    $('#playerTwoChoice').html(playerTwoChoice);
+  });
+
+  turn = 1;
+  checkForWinner = true;
+});
+
+//checks winner
 function whoWon(){
   //displays both players' choices
-  $('#playerOnePick').text(playerOneName + ': ' + playerOneChoice);
-  $('#playerOnePick').text(playerTwoName + ': ' + playerTwoChoice);
+  $('#playerOneChoice').html();
+  $('#playerTwoChoice').html();
 
   if (playerOneChoice == playerTwoChoice){
     $('#winner').html("It's a tie!");
@@ -150,6 +194,20 @@ function whoWon(){
     playerOneWins++;
     playerTwoLoss++;
   }
+
+  //updates firebase
+  database.ref().set({
+     player:{
+       one:{
+        wins: playerOneWins,
+        loss: playerOneLoss,
+       },
+       two:{
+        wins: playerTwoWins,
+        loss: playerTwoLoss,
+       }
+    }
+  });
 }
 
 //Chatbox
@@ -166,7 +224,8 @@ $("#sendChat").on("click", function() {
 
 });
 
-//sends to whoWon function after both players have won.
+// sends to whoWon function after both players have chosen.
 if (checkForWinner == true){
   whoWon();
 }
+
